@@ -12,7 +12,7 @@
     <a href="https://people.csail.mit.edu/ganchuang">Chuang Gan</a>
   </p>
   <p align="center">
-    <a href="">
+    <a href="https://arxiv.org/abs/2403.09631">
       <img src='https://img.shields.io/badge/Paper-PDF-red?style=flat&logo=arXiv&logoColor=red' alt='Paper PDF'>
     </a>
     <a href='https://vis-www.cs.umass.edu/3dvla' style='padding-left: 0.5rem;'>
@@ -28,10 +28,10 @@
 
 ## Citation
 ```
-@article{3dvla,
+@article{zhen20243dvla,
   author = {Zhen, Haoyu and Qiu, Xiaowen and Chen, Peihao and Yang, Jincheng and Yan, Xin and Du, Yilun and Hong, Yining and Gan, Chuang},
   title = {3D-VLA: 3D Vision-Language-Action Generative World Model},
-  journal = {arXiv},
+  journal = {arXiv preprint arXiv:2403.09631},
   year = {2024},
 }
 ```
