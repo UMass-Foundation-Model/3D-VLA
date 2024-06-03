@@ -96,4 +96,4 @@ Here we would like to thank the following resources for their great work:
 - [Diffusers](https://github.com/huggingface/diffusers), [InstructPix2Pix](https://github.com/timothybrooks/instruct-pix2pix), [StableDiffusion](https://github.com/Stability-AI/StableDiffusion) and [Point-E](https://github.com/openai/point-e) for the Diffusion Model.
 - [LAVIS](https://github.com/salesforce/LAVIS) and [3D-LLM](https://github.com/UMass-Foundation-Model/3D-LLM) for the Codebase and Architecture.
 - [OpenX](https://robotics-transformer-x.github.io) for Dataset.
-- [RLBench](https://github.com/stepjam/RLBench) and (Hiveformer)[https://github.com/vlc-robot/hiveformer] for Evaluation.
+- [RLBench](https://github.com/stepjam/RLBench) and [Hiveformer](https://github.com/vlc-robot/hiveformer) for Evaluation.
