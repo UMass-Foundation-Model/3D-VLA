@@ -26,8 +26,8 @@ def load_pipeline(ckpt_folder, model_id="stabilityai/stable-diffusion-2", device
         [os.path.join(ckpt_folder, f) for f in os.listdir(ckpt_folder) if f.startswith("checkpoint")],
         key=lambda x: int(x.split("-")[-1]),
     )[-1]
-    run_id = latest_checkpoint.split("/")[-2]
-    run_id = os.path.join(run_id, os.path.basename(latest_checkpoint))
+    run_id = latest_checkpoint.split("/")[-3]
+    run_id = os.path.join(run_id, "results", os.path.basename(latest_checkpoint))
     logging.info(f"Loading checkpoint from {latest_checkpoint}")
 
     # ==== Load model ====
@@ -86,7 +86,7 @@ def decode_one_latent(pipe, latent, output_type="np"):
 
 def main():
     parser = argparse.ArgumentParser(description="Inference")
-    parser.add_argument("--ckpt_folder", default="lavis/output/LDM/runs/pix2pix", help="path to checkpoint folder")
+    parser.add_argument("--ckpt_folder", default="lavis/output/LDM/pix2pix/runs", help="path to checkpoint folder")
     parser.add_argument("--num_samples", type=int, default=100, help="number of samples to run inference on")
     parser.add_argument("--all", action="store_true", help="run inference on all samples")
     parser.add_argument("--include_depth", action="store_true", help="include depth in input")
@@ -152,7 +152,7 @@ def worker(
     pipe, generator, run_id = load_pipeline(args.ckpt_folder, device_id=device_id)
 
     # ==== Save Folder ====
-    result_path = f"lavis/output/LDM/results/{run_id}/test_g{guidance_scale}_s{num_inference_steps}"
+    result_path = f"lavis/output/LDM/{run_id}/test_g{guidance_scale}_s{num_inference_steps}"
     os.makedirs(result_path, exist_ok=True)
     logging.info(f"Saving results to {result_path}")
 
@@ -196,7 +196,6 @@ def worker(
             pred_depth = pred_depth.reshape(H, W, 3)
 
         # === Load GT ===
-        gt_path = d["final_image_path"]
         target = PIL.Image.open(d["final_image_path"])
         target = np.array(target.resize((H, W)))[..., :3]
         if args.include_depth:

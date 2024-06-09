@@ -55,9 +55,7 @@
 ## News 📢
 
 - [2024/06] Training and inference code for goal generation diffusion models are released.
-
 - [2024/05] 3D-VLA is accepted to ICML 2024!
-
 - [2024/03] [Paper](https://arxiv.org/abs/2403.09631) is on arXiv.
 
 ## Method
@@ -89,9 +87,9 @@ We will update the file structure and the installation process in the future.
 
 - Then you could generate the goal images:
   ```bash
-  python inference_ldm_goal_image.py --ckpt_folder lavis/output/LDM/runs/pix2pix (--include_depth)
+  python inference_ldm_goal_image.py --ckpt_folder lavis/output/LDM/pix2pix/runs (--include_depth)
   ```
-  The results will be saved in the `lavis/output/LDM/results` folder.
+  The results will be saved in the `lavis/output/LDM/pix2pix/results` folder.
 
 ### Goal Point Cloud Generation
 - Train the goal point cloud diffusion model (finetuning the pretrained Point-E model):

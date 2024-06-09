@@ -24,6 +24,6 @@ $CMD train_ldm_goal_image.py \
     --learning_rate=5e-05 --max_grad_norm=1 --lr_warmup_steps=0 --conditioning_dropout_prob=0.05 \
     --mixed_precision=fp16 --resume_from_checkpoint "latest" \
     --pretrained_model_name_or_path=$MODEL_NAME \
-    --output_dir "./lavis/output/LDM/runs/$EXP_ID" \
+    --output_dir "./lavis/output/LDM/$EXP_ID/runs" \
     --ann_path=$ANN_PATH \
     # --include_depth
