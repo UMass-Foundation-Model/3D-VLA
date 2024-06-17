@@ -80,6 +80,10 @@ def parse_args():
         help="Whether to include depth images in the training dataset.",
     )
     parser.add_argument(
+        "--enable_sampling",
+        action="store_true",
+    )
+    parser.add_argument(
         "--depth_without_vae",
         action="store_true",
         help="whether to use vae to encode depth or not",
@@ -558,7 +562,7 @@ def main():
 
     # In distributed training, the load_dataset function guarantees that only one local process can concurrently
     # download the dataset.
-    dataset = GoalDataset(args.ann_path, args.include_depth)
+    dataset = GoalDataset(args.ann_path, args.include_depth, args.enable_sampling)
 
     # Preprocessing the datasets.
     # We need to tokenize input captions and transform the images.

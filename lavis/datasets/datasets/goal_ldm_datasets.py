@@ -8,8 +8,8 @@ from collections import defaultdict
 
 
 class GoalDataset(Dataset):
-    def __init__(self, ann_path, include_depth=False):
-        self.enable_sampling = True
+    def __init__(self, ann_path, include_depth=False, enable_sampling=True):
+        self.enable_sampling = enable_sampling
 
         self.ann_path = ann_path
         self.include_depth = include_depth
@@ -32,7 +32,7 @@ class GoalDataset(Dataset):
                 self.sample_weights[dataset] = np.sqrt(len(samples))
         else:
             self.annotations = [s for samples in self.annotations.values() for s in samples]
-            self.annotations = random.shuffle(self.annotations)
+            random.shuffle(self.annotations)
 
     @property
     def dataset_to_robo_arm(self):

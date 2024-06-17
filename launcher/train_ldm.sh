@@ -18,7 +18,8 @@ MODEL_NAME="stabilityai/stable-diffusion-2"
 ANN_PATH=ANNOTATION_PATH
 
 $CMD train_ldm_goal_image.py \
-    --resolution=256 --random_flip --train_batch_size=32 --seed=42 \
+    --resolution=256 --random_flip --enable_sampling \
+    --train_batch_size=32 --seed=42 \
     --gradient_accumulation_steps=1 --gradient_checkpointing \
     --max_train_steps=180000 --checkpointing_steps=1000 --checkpoints_total_limit=30 \
     --learning_rate=5e-05 --max_grad_norm=1 --lr_warmup_steps=0 --conditioning_dropout_prob=0.05 \
