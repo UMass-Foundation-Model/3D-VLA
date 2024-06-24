@@ -44,6 +44,12 @@
       </ul>
     </li>
     <li>
+      <a href="#multimodal-large-language-model">Multimodal Large Language Model</a>
+      <ul>
+        <li><a href="#pretrain-3d-vla">Pretrain 3D-VLA</a></li>
+      </ul>
+    </li>
+    <li>
       <a href="#citation">Citation</a>
     </li>
     <li>
@@ -103,6 +109,14 @@ We will update the file structure and the installation process in the future.
   python inference_pe_goal_pcd.py
   ```
   If you want to use multiple GPUs, use `torchrun --nproc_per_node=[NUM_GPUS] --master_port=[PORT] inference_pe_goal_pcd.py` instead.
+
+## Multimodal Large Language Model
+
+### Pretrain 3D-VLA
+- Train our 3D-VLA model:
+  ```bash
+  bash launcher/train_llm.sh [NUM_GPUS] [NUM_NODES]
+  ```
 
 ## Citation
 ```
