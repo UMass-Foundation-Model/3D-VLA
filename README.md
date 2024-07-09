@@ -60,6 +60,7 @@
 
 ## News 📢
 
+- [2024/07] 3D-VLA Pretraining code and goal image generation LDM checkpoint are released.
 - [2024/06] Training and inference code for goal generation diffusion models are released.
 - [2024/05] 3D-VLA is accepted to ICML 2024!
 - [2024/03] [Paper](https://arxiv.org/abs/2403.09631) is on arXiv.
@@ -85,38 +86,43 @@ We will update the file structure and the installation process in the future.
 ## Embodied Diffusion Models
 
 ### Goal Image Generation
-- Train the goal image latent diffusion model with the following command:
-  ```bash
-  bash launcher/train_ldm.sh [NUM_GPUS] [NUM_NODES]
-  ```
-  If you want to include depth information, you could add `--include_depth` to the command in the `train_ldm.sh` file.
+Train the goal image latent diffusion model with the following command. If you want to include depth information, you could add `--include_depth` to the command in the `train_ldm.sh` file.
+```bash
+bash launcher/train_ldm.sh [NUM_GPUS] [NUM_NODES]
+```
 
-- Then you could generate the goal images:
-  ```bash
-  python inference_ldm_goal_image.py --ckpt_folder lavis/output/LDM/pix2pix/runs (--include_depth)
-  ```
-  The results will be saved in the `lavis/output/LDM/pix2pix/results` folder.
+Then you could generate the goal images. The results will be saved in the `lavis/output/LDM/pix2pix/results` folder.
+```bash
+python inference_ldm_goal_image.py \
+    --ckpt_folder lavis/output/LDM/pix2pix/runs (--include_depth)
+```
+
+We have released our model [here](https://huggingface.co/anyeZHY/3dvla-diffusion). A simple demo can be run using the following command:
+
+```bash
+python inference_ldm_goal_image.py \
+    --ckpt_folder anyezhy/3dvla-diffusion --image docs/cans.png \
+    --text "knock pepsi can over" --save_path result.png
+```
 
 ### Goal Point Cloud Generation
-- Train the goal point cloud diffusion model (finetuning the pretrained Point-E model):
-  ```bash
-  bash launcher/train_pe.sh [NUM_GPUS] [NUM_NODES]
-  ```
-  We will soon support the FSDP training for the goal point cloud generation.
+Train the goal point cloud diffusion model (finetuning the pretrained Point-E model). We will soon support the FSDP training for the goal point cloud generation.
+```bash
+bash launcher/train_pe.sh [NUM_GPUS] [NUM_NODES]
+```
 
-- Inferece the goal point cloud with the following command:
+Inferece the goal point cloud with the following command. If you want to use multiple GPUs, use `torchrun --nproc_per_node=[NUM_GPUS] --master_port=[PORT] inference_pe_goal_pcd.py` instead.
   ```bash
   python inference_pe_goal_pcd.py
   ```
-  If you want to use multiple GPUs, use `torchrun --nproc_per_node=[NUM_GPUS] --master_port=[PORT] inference_pe_goal_pcd.py` instead.
 
 ## Multimodal Large Language Model
 
 ### Pretrain 3D-VLA
-- Train our 3D-VLA model:
-  ```bash
-  bash launcher/train_llm.sh [NUM_GPUS] [NUM_NODES]
-  ```
+Train our 3D-VLA model:
+```bash
+bash launcher/train_llm.sh [NUM_GPUS] [NUM_NODES]
+```
 
 ## Citation
 ```
