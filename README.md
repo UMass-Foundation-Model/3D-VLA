@@ -83,6 +83,8 @@ pip install -r requirements.txt
 
 We will update the file structure and the installation process in the future.
 
+We provide a [model card](docs/model_card.md) for the 3D-VLA model. The model card includes the task description, model description, and training datasets.
+
 ## Embodied Diffusion Models
 
 ### Goal Image Generation
@@ -97,12 +99,18 @@ python inference_ldm_goal_image.py \
     --ckpt_folder lavis/output/LDM/pix2pix/runs (--include_depth)
 ```
 
-We have released our model [here](https://huggingface.co/anyeZHY/3dvla-diffusion). A simple demo can be run using the following command:
+We have released our model on Hugging Face: [goal-image](https://huggingface.co/anyezhy/3dvla-diffusion) and [goal-depth](https://huggingface.co/anyezhy/3dvla-diffusion-depth). A simple demo can be run using the following command:
 
 ```bash
 python inference_ldm_goal_image.py \
-    --ckpt_folder anyezhy/3dvla-diffusion --image docs/cans.png \
-    --text "knock pepsi can over" --save_path result.png
+    --ckpt_folder anyezhy/3dvla-diffusion \
+    --image docs/cans.png --text "knock pepsi can over" \
+    --save_path result.png
+
+python inference_ldm_goal_image.py \
+    --ckpt_folder anyezhy/3dvla-diffusion-depth --include_depth \
+    --image docs/bottle.png --text "move water bottle near sponge" \
+    --save_path result.png
 ```
 
 ### Goal Point Cloud Generation

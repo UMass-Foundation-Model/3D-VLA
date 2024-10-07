@@ -54,10 +54,9 @@ def load_depth_image(image_path, H, W):
     return np.array(center_crop_resize(depth_image, H, W))[..., :3]
 
 
-def save_combined_image(image, pred_image, target, pred_depth, target_depth, sample_id, prompt, include_depth):
+def save_combined_image(image, depth, pred_image, target, pred_depth, target_depth, sample_id, prompt, include_depth):
     comb_img = np.concatenate([image, pred_image, target], axis=1)
     if include_depth:
-        pred_depth = pred_depth.reshape(H, W, 3)
         comb_depth = np.concatenate([depth, pred_depth, target_depth], axis=1)
         comb_img = np.concatenate([comb_img, comb_depth], axis=0)
 
@@ -179,7 +178,7 @@ def main():
         if not args.all and args.num_samples > 0:
             test_samples = test_samples[: args.num_samples]
     else:
-        assert args.image is not None and args.text is not None
+        assert args.image is not None and args.text is not None, "Please provide both image and text inputs"
         test_samples = [{"base_image_path": args.image, "instruction": args.text}]
     logging.info(f"Loaded {len(test_samples)} test samples")
 
@@ -287,7 +286,11 @@ def worker(
             sample_id = args.save_path
 
         # ==== Save images ====
-        save_combined_image(image, pred_image, target, pred_depth, target_depth, sample_id, prompt, args.include_depth)
+        if sample_id.endswith(".png"):
+            sample_id = sample_id.replace(".png", "")
+        save_combined_image(
+            image, depth, pred_image, target, pred_depth, target_depth, sample_id, prompt, args.include_depth
+        )
         save_images(
             image, pred_image, target, depth, pred_depth, target_depth, sample_id, has_target, args.include_depth
         )
