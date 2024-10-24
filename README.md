@@ -115,7 +115,7 @@ python inference_ldm_goal_image.py \
 ```
 
 ### Goal Point Cloud Generation
-We have implemented [xFormers](https://github.com/facebookresearch/xformers) for the goal point cloud diffusion model. You could install the it and accelerate the training and inference process.
+We have implemented [xFormers](https://github.com/facebookresearch/xformers) for the goal point cloud diffusion model. You could install it and accelerate the training and inference process.
 
 Train the goal point cloud diffusion model (finetuning the pretrained Point-E model).
 ```bash
