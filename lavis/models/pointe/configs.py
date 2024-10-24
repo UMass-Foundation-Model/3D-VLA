@@ -11,7 +11,7 @@ from .transformer import (
     CLIPImagePointDiffusionTransformer,
     PointDiffusionTransformer,
     UpsamplePointDiffusionTransformer,
-    CLIPImageGoalPointDiffusionTransformer,
+    GoalPointDiffusionTransformer,
 )
 
 MODEL_CONFIGS = {
@@ -113,24 +113,15 @@ MODEL_CONFIGS = {
     },
 }
 
-
 def model_from_config(config: Dict[str, Any], device: torch.device) -> nn.Module:
     config = config.copy()
     name = config.pop("name")
+
+    config["device"] = device
+    config["dtype"] = torch.float32
+
     if name == "PointDiffusionTransformer":
-        return PointDiffusionTransformer(device=device, dtype=torch.float32, **config)
-    elif name == "TextPointDiffusionTransformer":
-        return TextPointDiffusionTransformer(device=device, dtype=torch.float32, **config)
-    elif name == "CLIPImagePointDiffusionTransformer":
-        return CLIPImagePointDiffusionTransformer(device=device, dtype=torch.float32, **config)
-    elif name == "CLIPImageGridPointDiffusionTransformer":
-        return CLIPImageGridPointDiffusionTransformer(device=device, dtype=torch.float32, **config)
-    elif name == "UpsamplePointDiffusionTransformer":
-        return UpsamplePointDiffusionTransformer(device=device, dtype=torch.float32, **config)
-    elif name == "CLIPImageGridUpsamplePointDiffusionTransformer":
-        return CLIPImageGridUpsamplePointDiffusionTransformer(device=device, dtype=torch.float32, **config)
-    elif name == "CrossAttentionPointCloudSDFModel":
-        return CrossAttentionPointCloudSDFModel(device=device, dtype=torch.float32, **config)
-    elif name == "CLIPImageGoalPointDiffusionTransformer":
-        return CLIPImageGoalPointDiffusionTransformer(device=device, dtype=torch.float32, **config)
+        return PointDiffusionTransformer(**config)
+    elif name == "GoalPointDiffusionTransformer":
+        return GoalPointDiffusionTransformer(init_with_modified_layer=False, **config)
     raise ValueError(f"unknown model name: {name}")

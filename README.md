@@ -60,6 +60,7 @@
 
 ## News 📢
 
+- [2024/10] All the diffusion models are released on Hugging Face! You could find the models [here](https://huggingface.co/anyezhy). We also provide a [Model Card](docs/model_card.md) for the detailed information. Running the inference code will automatically download the latest models.
 - [2024/07] 3D-VLA Pretraining code and goal image generation LDM checkpoint are released.
 - [2024/06] Training and inference code for goal generation diffusion models are released.
 - [2024/05] 3D-VLA is accepted to ICML 2024!
@@ -114,14 +115,23 @@ python inference_ldm_goal_image.py \
 ```
 
 ### Goal Point Cloud Generation
-Train the goal point cloud diffusion model (finetuning the pretrained Point-E model). We will soon support the FSDP training for the goal point cloud generation.
+We have implemented [xFormers](https://github.com/facebookresearch/xformers) for the goal point cloud diffusion model. You could install the it and accelerate the training and inference process.
+
+Train the goal point cloud diffusion model (finetuning the pretrained Point-E model).
 ```bash
 bash launcher/train_pe.sh [NUM_GPUS] [NUM_NODES]
 ```
 
+We have released our model on Hugging Face: [goal-point-cloud](https://huggingface.co/anyezhy/3dvla-diffusion-pointcloud).
 Inferece the goal point cloud with the following command. If you want to use multiple GPUs, use `torchrun --nproc_per_node=[NUM_GPUS] --master_port=[PORT] inference_pe_goal_pcd.py` instead.
   ```bash
-  python inference_pe_goal_pcd.py
+  python inference_pe_goal_pcd.py \
+    --input_npy docs/point_cloud.npy --text "close bottom drawer" \
+    --output_dir SAVE_PATH
+
+  python inference_pe_goal_pcd.py \
+    --input_npy docs/money.npy \
+    --text "put the money away in the safe on the bottom shelf"
   ```
 
 ## Multimodal Large Language Model

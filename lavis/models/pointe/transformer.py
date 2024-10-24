@@ -4,10 +4,16 @@ Adapted from: https://github.com/openai/openai/blob/55363aa496049423c37124b440e9
 
 
 import math
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Callable, Type, TypeVar, Union
 
 import torch
 import torch.nn as nn
+from huggingface_hub import PyTorchModelHubMixin
+try:
+    import xformers
+except:
+    xformers = None
 
 from .checkpoint import checkpoint
 from .pretrained_clip import FrozenImageCLIP, ImageCLIP, ImageType
@@ -80,10 +86,17 @@ class QKVMultiheadAttention(nn.Module):
         scale = 1 / math.sqrt(math.sqrt(attn_ch))
         qkv = qkv.view(bs, n_ctx, self.heads, -1)
         q, k, v = torch.split(qkv, attn_ch, dim=-1)
-        weight = torch.einsum("bthc,bshc->bhts", q * scale, k * scale)  # More stable with f16 than dividing afterwards
-        wdtype = weight.dtype
-        weight = torch.softmax(weight.float(), dim=-1).type(wdtype)
-        return torch.einsum("bhts,bshc->bthc", weight, v).reshape(bs, n_ctx, -1)
+        if xformers is None:
+            weight = torch.einsum("bthc,bshc->bhts", q * scale, k * scale)  # More stable with f16 than dividing afterwards
+            wdtype = weight.dtype
+            weight = torch.softmax(weight.float(), dim=-1).type(wdtype)
+            output = torch.einsum("bhts,bshc->bthc", weight, v).reshape(bs, n_ctx, -1)
+        else:
+            k = k * scale
+            q = q * scale * (q.shape[-1] ** 0.5)
+            output = xformers.ops.memory_efficient_attention(q, k, v, p=0.0)
+            output = output.reshape(bs, n_ctx, -1)
+        return output
 
 
 class ResidualAttentionBlock(nn.Module):
@@ -611,30 +624,32 @@ class CLIPImageGridUpsamplePointDiffusionTransformer(UpsamplePointDiffusionTrans
         return self._forward_with_cond(x, cond)
 
 
-class CLIPImageGoalPointDiffusionTransformer(PointDiffusionTransformer):
+class GoalPointDiffusionTransformer(PointDiffusionTransformer, PyTorchModelHubMixin):
     def __init__(
         self,
         *,
         device: torch.device,
-        dtype: torch.dtype,
+        dtype: torch.dtype = torch.float32,
         n_ctx: int = 1024,
         token_cond: bool = False,
         cond_drop_prob: float = 0.0,
         frozen_clip: bool = True,
-        cache_dir: Optional[str] = None,
+        pointe_cache_dir: Optional[str] = None,
+        init_with_modified_layer: bool = True,
         **kwargs,
     ):
         super().__init__(device=device, dtype=dtype, n_ctx=n_ctx + int(token_cond), **kwargs)
         self.n_ctx = n_ctx
         self.token_cond = token_cond
         self.frozen_clip = frozen_clip
-        self.cache_dir = cache_dir
+        self.pointe_cache_dir = pointe_cache_dir
         self.clip_embed = nn.Linear(768, self.backbone.width, device=device, dtype=dtype)
-        self.point_embed = nn.Linear(6, self.backbone.width, device=device, dtype=dtype)
         self.cond_drop_prob = cond_drop_prob
+        if init_with_modified_layer:
+            self.modify_layer()
 
     def load_clip_acc(self, device):
-        self.clip = (FrozenImageCLIP if self.frozen_clip else ImageCLIP)(device, cache_dir=self.cache_dir)
+        self.clip = (FrozenImageCLIP if self.frozen_clip else ImageCLIP)(device, cache_dir=self.pointe_cache_dir)
 
     def cached_model_kwargs(self, batch_size: int, model_kwargs: Dict[str, Any]) -> Dict[str, Any]:
         with torch.no_grad():
@@ -657,8 +672,7 @@ class CLIPImageGoalPointDiffusionTransformer(PointDiffusionTransformer):
         :param embeddings: a batch of CLIP embeddings to condition on.
         :return: an [N x C' x T] tensor.
         """
-        assert x.shape[-1] == self.n_ctx
-
+        # assert x.shape[-1] == self.n_ctx
         t_embed = self.time_embed(timestep_embedding(t, self.backbone.width))
         clip_out = self.clip(batch_size=len(x), images=images, texts=texts, embeddings=embeddings)
         assert len(clip_out.shape) == 2 and clip_out.shape[0] == x.shape[0]
@@ -673,6 +687,19 @@ class CLIPImageGoalPointDiffusionTransformer(PointDiffusionTransformer):
         clip_embed = self.clip_embed(clip_out)
 
         input_pointcloud = input_pointcloud.permute(0, 2, 1)
-        point_embed = self.point_embed(input_pointcloud)
-        cond = [(clip_embed, self.token_cond), (t_embed, self.time_token_cond), (point_embed, True)]
+        cond = [(clip_embed, self.token_cond), (t_embed, self.time_token_cond)]
         return self._forward_with_cond(x, cond)
+
+    def modify_layer(self):
+        device = self.input_proj.weight.device
+        dtype = self.input_proj.weight.dtype
+        with torch.no_grad():
+            new_linear_in = nn.Linear(12, self.input_proj.out_features, bias=True, device=device, dtype=dtype)
+            new_linear_in.weight.zero_()
+            new_linear_in.weight[:, :6].copy_(self.input_proj.weight)
+            self.input_proj = new_linear_in
+
+            new_linear_out = nn.Linear(self.output_proj.in_features, 6, bias=True, device=device, dtype=dtype)
+            new_linear_out.weight.zero_()
+            new_linear_out.weight.copy_(self.output_proj.weight[:6])
+            self.output_proj = new_linear_out

@@ -3,8 +3,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.utils import clip_grad_norm_
 from diffusers import DDPMScheduler, DDPMPipeline
-from diffusers.optimization import get_cosine_schedule_with_warmup
+from diffusers.optimization import get_constant_schedule_with_warmup
 from accelerate import Accelerator
 from huggingface_hub import create_repo, upload_folder
 from tqdm.auto import tqdm
@@ -20,14 +21,14 @@ from lavis.common.logger import setup_logger
 
 @dataclass
 class TrainingConfig:
-    train_batch_size = 1
+    train_batch_size = 24
     eval_batch_size = 1  # how many images to sample during evaluation
-    num_epochs = 50
+    num_epochs = 200
     gradient_accumulation_steps = 1
-    learning_rate = 1e-4
-    lr_warmup_steps = 500
-    mixed_precision = "fp16"  # `no` for float32, `fp16` for automatic mixed precision
-    output_dir = "lavis/output/PE/rlbench-point-as-token/runs"  # the model name locally and on the HF Hub
+    learning_rate = 3e-5
+    lr_warmup_steps = 10
+    mixed_precision = "no"  # `no` for float32, `fp16` for automatic mixed precision
+    output_dir = "lavis/output/PE/rlbench-point/runs"  # the model name locally and on the HF Hub
 
     model_config = {
         "cond_drop_prob": 0.1,
@@ -36,12 +37,12 @@ class TrainingConfig:
         "input_channels": 6,
         "layers": 12,
         "n_ctx": 2048,
-        "name": "CLIPImageGoalPointDiffusionTransformer",
+        "name": "GoalPointDiffusionTransformer",
         "output_channels": 12,
         "time_token_cond": True,
         "token_cond": True,
         "width": 512,
-        "cache_dir": "cache/point_e_model",
+        "pointe_cache_dir": "cache/point_e_model",
     }
 
 
@@ -76,7 +77,7 @@ def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_s
         model.module.load_clip_acc(accelerator.device)
     else:
         model.load_clip_acc(accelerator.device)
-    global_step = 0
+    global_step = epoch * len(train_dataloader)
 
     # Now you train the model
     for epoch in range(epoch, config.num_epochs):
@@ -87,9 +88,6 @@ def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_s
         for step, batch in enumerate(train_dataloader):
             pointcloud = batch["start_pc"].type(torch.float32).permute(0, 2, 1)  # [-1,1]
             target = batch["end_pc"].type(torch.float32).permute(0, 2, 1)  # [-1,1]
-
-            pointcloud[:, 2] = pointcloud[:, 2] - 1.0
-            target[:, 2] = target[:, 2] - 1.0
 
             # Sample noise to add to the images
             noise = torch.randn(pointcloud.shape, device=pointcloud.device)
@@ -105,6 +103,7 @@ def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_s
             # Add noise to the clean images according to the noise magnitude at each timestep
             # (this is the forward diffusion process)
             noisy_pointcloud = noise_scheduler.add_noise(target, noise, timesteps)
+            noisy_pointcloud = torch.cat([noisy_pointcloud, pointcloud], dim=1)
 
             with accelerator.accumulate(model):
                 # Predict the noise residual
@@ -112,7 +111,6 @@ def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_s
                 loss = F.mse_loss(noise_pred, noise)
                 accelerator.backward(loss)
 
-                accelerator.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
@@ -153,23 +151,23 @@ if __name__ == "__main__":
             resume_path = os.path.join(config.output_dir, f"ckpt-{max_ckpt}")
             epoch = max_ckpt + 1
         else:
-            model.load_state_dict(load_checkpoint(base_name, device, cache_dir=model_config["cache_dir"]), strict=False)
+            model.load_state_dict(
+                load_checkpoint(base_name, device, cache_dir=model_config["pointe_cache_dir"]), strict=False
+            )
     else:  # init from point-e
-        model.load_state_dict(load_checkpoint(base_name, device, cache_dir=model_config["cache_dir"]), strict=False)
+        model.load_state_dict(
+            load_checkpoint(base_name, device, cache_dir=model_config["pointe_cache_dir"]), strict=False
+        )
 
     # ==== change input and output layer ====
     with torch.no_grad():
-        new_linear_out = nn.Linear(model.output_proj.in_features, 6, bias=True)
-        new_linear_out.weight.zero_()
-        new_linear_out.weight.copy_(model.output_proj.weight[:6])
-        model.output_proj = new_linear_out
+        model.modify_layer()
 
     # ==== Optimizer and Scheduler ====
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
-    lr_scheduler = get_cosine_schedule_with_warmup(
+    lr_scheduler = get_constant_schedule_with_warmup(
         optimizer=optimizer,
         num_warmup_steps=config.lr_warmup_steps,
-        num_training_steps=(len(train_dataloader) * config.num_epochs),
     )
 
     train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_scheduler, resume_path, epoch)
