@@ -28,6 +28,7 @@
 
 **Datasets**: RLBench, including the following tasks: hang_frame_on_hanger, turn_tap, wipe_desk, push_buttons, put_money_in_safe, pick_up_cup, slide_block_to_target, close_door, lamp_on, water_plants, put_knife_on_chopping_board, turn_oven_on, take_frame_off_hanger, place_hanger_on_rack, scoop_with_spatula, open_drawer, reach_and_drag, close_drawer, sweep_to_dustpan, change_clock, take_umbrella_out_of_umbrella_stand, stack_wine, take_money_out_safe
 
+**Data Preprocessing**: We used [Hiveformer](https://github.com/vlc-robot/hiveformer) to generate our data. For each task, we selected variation 0 for training and used the first text instructions from [`taskvar_instructions`](https://github.com/vlc-robot/hiveformer/blob/main/assets/taskvar_instructions.jsonl). Point clouds were preprocessed by removing the table background and normalizing them to fit within a unit sphere.
 
 
 # Future Plans
